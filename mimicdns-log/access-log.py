@@ -2,10 +2,11 @@ import os
 import time
 import datetime
 
-log_path = '/home/daniel/Desktop/cache.0170'
-
-timedelta = 20
-step = 100
+cache_path = '/data/dnslog1/'
+cache_log = '/home/daniel/log/cache.log'
+destlog_path = '/home/daniel/log/'
+timedelta = 1
+step = 10
 #返回timedelta分钟前的时间戳
 def delta_minute():
     a = (datetime.datetime.today()-datetime.timedelta(minutes=timedelta)).timestamp()
@@ -23,16 +24,37 @@ def time_shift(strtime):
     logt = str(logtm).split('.')[0]+'.'+ ms
     return float(logt)
 
-def access_process(log_path,exam_minute):
+
+def send_logfile(logname):
+    cmd = 'scp '+destlog_path
+    dst = 'root@172.29.91.109:/home/mdns'
+    shell = cmd+logname+' '+dst
+    try:
+        os.system(shell)
+    except Exception as e:
+        print(e)
+
+def getnewestfile(file_path):
+    filelist = os.listdir(file_path)
+    filelist.sort(key = lambda fn: os.path.getmtime(os.path.join(file_path, fn)))
+    filepath = os.path.join(file_path, filelist[-1])
+    return filepath
+
+def gz2txt(log_path):
+    os.system('zcat '+log_path+' > '+cache_log)
+
+def access_process(log_path, exam_minute):
     try:
         dest_log = logfilename()
-        fd_destlog = open(dest_log,'w')
-    except:
-        print('dest log file open failed!\n')
+        fd_destlog = open(os.path.join(destlog_path, dest_log), 'w')
+    except Exception as e:
+        print('dest log file open failed!\n', e)
+        
 
     try:    
         fd_cache_log = open(log_path)
         line = fd_cache_log.readline()
+        #print(line)
         while line:
             log_time = line.split('|')[8]
             logtime = time_shift(log_time)
@@ -49,17 +71,30 @@ def access_process(log_path,exam_minute):
             line = fd_cache_log.readline()
         
         for line in fd_cache_log:
-            l = line.split('|')
-            logtime = time_shift(l[8])
+            ln = line.split('|')
+            logtime = time_shift(ln[8])
+            #print(ln)
             if logtime >= exam_minute:
-                print('Writing IP to log...\n')
-                fd_destlog.write(l[0]+'\n')
-    except Exception as e:
-        print(e)
-    finally:    
+                #print('Writing IP to log...\n')
+                #print(ln[-1])
+                if ln[-1] == 'q\n':
+                    fd_destlog.write(ln[0]+'\n')
+        
         fd_cache_log.close()
         fd_destlog.close()
+    except Exception as e:
+        print(e)
+        #fd_cache_log.close()
+        #fd_destlog.close()
+
+
+    send_logfile(dest_log)
+
 
 if __name__ == '__main__':
-    delta_min = delta_minute()
-    access_process(log_path,delta_min)
+    while True:
+        delta_min = delta_minute()
+        cachelog = getnewestfile(cache_path)
+        gz2txt(cachelog)
+        access_process(cache_log, delta_min)
+        time.sleep(60)

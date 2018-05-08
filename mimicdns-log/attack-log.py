@@ -3,15 +3,13 @@ import os
 import time
 import datetime
 
-log_path = '/var/log/syslog'        #syslog日志文件路径
-#log_path = '/home/daniel/Desktop/syslog.txt'        #syslog日志文件路径
+log_path = '/var/log/auth.log'        #syslog日志文件路径
+# log_path = '/home/daniel/Desktop/syslog.txt'        #syslog日志文件路径
+timedelta = 1
+destlog_path = '/home/daniel/log/'
 
-
-
-timedelta = 20
-
-#日志时间字符串转换成时间戳
-def time_shift(strtime):
+# 日志时间字符串转换成时间戳
+def time_shift(strtime):    
     strtime = strtime + ' 2018'
     time_fmt = '%b  %d %H:%M:%S %Y'
     ptime = datetime.datetime.strptime(strtime,time_fmt)
@@ -42,15 +40,26 @@ def ip_extract(line):
         return None
 
 
+def send_logfile(logname):
+    cmd = 'scp /home/daniel/log/'
+    dst = 'root@172.29.91.109:/home/mdns'
+    shell = cmd+logname+' '+dst
+    try:
+        os.system(shell)
+    except Exception as e:
+        print(e)
+
+
 def syslog_process(log_path,exam_minute):
 
     step = 1000
     # open log file to write IP
     try:
         dest_log = logfilename()
-        fd_destlog = open(dest_log,'w')
-    except:
-        print('dest log file open failed!\n')
+        fd_destlog = open(os.path.join(destlog_path, dest_log), 'w')
+    except Exception as e:
+        print('dest log file open failed!\n', e)
+#        fd_destlog.close()
     #open syslog file
     try:
         fd_syslog = open(log_path)
@@ -79,17 +88,21 @@ def syslog_process(log_path,exam_minute):
             if logtime >= exam_minute:
                 ip = ip_extract(line)
                 if(ip):
-                    print('Writing IP to log...\n')
+                    #print('Writing IP to log...\n')
                     fd_destlog.write(ip+'\n')
             else:
                 continue
-    except Exception as e:
-        print('error!',e)
-    finally:
+        
         fd_destlog.close()
         fd_syslog.close()
-
+    except Exception as e:
+        print('error!',e)
+        #fd_syslog.close()
+    
+    send_logfile(dest_log)
 
 if __name__ == '__main__':
-    delta_min = delta_minute()
-    syslog_process(log_path, delta_min)
+    while True:
+        delta_min = delta_minute()
+        syslog_process(log_path, delta_min)
+        time.sleep(60)
