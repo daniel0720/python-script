@@ -39,13 +39,39 @@ def ip_extract(line):
     else:
         return None
 
+def netcheck():
+    try:
+        now = time.asctime(time.localtime(time.time()))
+        ret = os.system('ping 172.29.91.109 -c 1 -w 1')
+        #ret = subprocess.Popen(['ping 172.29.91.109 -c 1 -w 1'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+        #out = ret.stdout.read()
+        #out = out.decode('utf-8')
+        #regex = re.compile('100% packet loss')
+        #if len(regex.findall(out)) == 0:
+        if ret:
+            print(now, "Network is unreachable!!!")
+            #print(now, 'Network is OK!!!')
+            #return 'OK'
+            return 'ERROR'
+            #print(now, 'Network is OK!!!')
+        else:
+            print(now, 'Network is OK!!!')
+            #print(now, "Network is unreachable!!!")
+            #return 'ERROR'
+            return 'OK'
+            #print(now, "Network is unreachable!!!")
+    except Exception as e:
+        print(now, e)
+
 
 def send_logfile(logname):
     cmd = 'scp /home/daniel/log/'
     dst = 'root@172.29.91.109:/home/mdns'
     shell = cmd+logname+' '+dst
     try:
-        os.system(shell)
+        net_con = netcheck()
+        if net_con == 'OK':
+            os.system(shell)
     except Exception as e:
         print(e)
 

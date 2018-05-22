@@ -1,0 +1,11 @@
+#!/bin/sh
+
+problem_date=`date '+%Y-%m-%d %H:%M:%S'`
+test=`ps -ef|grep 'test-jk.sh' |grep -v grep|wc -l|awk '{printf $1"\n"}'`
+
+if [ $test = 0 ]
+        then
+	sleep 2
+        echo "test is no exist! $problem_date" >> /data/test.log
+        cd /data;nohup /data/test-jk.sh &
+        fi

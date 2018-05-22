@@ -1,0 +1,11 @@
+#!/bin/sh
+
+problem_date=`date '+%Y-%m-%d %H:%M:%S'`
+pytest=`ps -ef|grep 'py-jk.sh' |grep -v grep|wc -l|awk '{printf $1"\n"}'`
+
+if [ $pytest = 0 ]
+        then
+        sleep 2
+        echo "pytest is no exist! $problem_date" >> /home/daniel/test.log
+        cd /home/daniel;/home/daniel/py-jk.sh &
+        fi

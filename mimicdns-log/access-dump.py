@@ -1,6 +1,7 @@
 import os
 import time
 import datetime
+import subprocess
 
 destlog_path = '/home/daniel/log/'
 dump_path = '/home/daniel/dump/'
@@ -32,12 +33,39 @@ def ip_extract(ip_port):
     ip = ip_tuple[0]+'.'+ip_tuple[1]+'.'+ip_tuple[2]+'.'+ip_tuple[3]
     return ip
 
+
+def netcheck():
+    try:
+        now = time.asctime(time.localtime(time.time()))
+        ret = os.system('ping 172.29.91.109 -c 1 -w 1')
+        #ret = subprocess.Popen(['ping 172.29.91.109 -c 1 -w 1'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+        #out = ret.stdout.read()
+        #out = out.decode('utf-8')
+        #regex = re.compile('100% packet loss')
+        #if len(regex.findall(out)) == 0:
+        if ret:
+            print(now, "Network is unreachable!!!")
+            #print(now, 'Network is OK!!!')
+            #return 'OK'
+            return 'ERROR'
+        else:
+            print(now, 'Network is OK!!!')
+            #print(now, "Network is unreachable!!!")
+            #return 'ERROR'
+            return 'OK'
+    except Exception as e:
+        print(now, e)
+
+
 def send_logfile(logname):
     cmd = 'scp '+destlog_path
     dst = 'root@172.29.91.109:/home/mdns'
     shell = cmd+logname+' '+dst
     try:
-        os.system(shell)
+        net_con = netcheck()
+        if net_con == 'OK':
+            os.system(shell)   
+
     except Exception as e:
         print(e)
 
@@ -79,6 +107,8 @@ def access_process(log_path, exam_minute):
             ln = line.split()
             logtime = time_shift(ln[0])
             if logtime >= exam_minute:
+                #print('logtime:',logtime)
+                #print('exam_time:',exam_minute)
                 #print('Writing IP to log...\n')
                 ip = ip_extract(ln[2])
                 fd_destlog.write(ip+'\n')
